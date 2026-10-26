@@ -1,0 +1,35 @@
+name: Executar Pipeline Diario do Lakehouse
+
+on:
+  schedule:
+    # Agenda para rodar sozinho todo dia as 03:00 AM UTC (meia-noite no horario de Brasilia)
+    - cron: '0 3 * * *'
+  workflow_dispatch: # Permite rodar manualmente clicando no botao
+
+jobs:
+  rodar-pipeline:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Baixar codigo do repositorio
+      uses: actions/checkout@v4
+
+    - name: Configurar o Python no servidor do GitHub
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+
+    - name: Instalar bibliotecas de dados
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+
+    - name: Executar Script de Engenharia e Analytics
+      run: python pipeline.py
+
+    - name: Salvar dados e Dashboard de volta no GitHub
+      run: |
+        git config --global user.name "GitHub Action Bot"
+        git config --global user.email "actions@github.com"
+        git add data/ docs/
+        git commit -m "Atualizacao automatica dos dados do Lakehouse [Skip CI]" || echo "Sem alteracoes para salvar."
+        git push
